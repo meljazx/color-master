@@ -1,0 +1,24 @@
+/* editor.js
+   Editor 2D estilo Photoshop sencillo: herramientas, 3 capas, opacidad, relleno, cuentagotas, deshacer, selector de color, niveles y guardado en galería. */
+const mkc=(w=640,h=360)=>{const c=document.createElement("canvas");c.width=w;c.height=h;return c},mkr=()=>{const c=mkc();return[c,c.getContext("2d")]};
+function editor(el,o={}){const W=640,H=360;let tool="b",lay=0,hist=[],dn=0,sx=0,sy=0,lx=0,ly=0;const vis=[1,1,1],TL=[["b","🖌️","Pincel"],["e","🧽","Goma"],["f","🪣","Relleno"],["i","💧","Cuentagotas"],["l","╱","Línea"],["r","▭","Rectángulo"],["o","◯","Elipse"]];
+ el.innerHTML=`<div class="ed"><div class="tools">${TL.map(t=>`<button data-t="${t[0]}" title="${t[2]}">${t[1]}</button>`).join("")}<button id="un" title="Deshacer">↶</button></div><div class="cvs">${[0,1,2].map(i=>`<canvas width="${W}" height="${H}" id="L${i}"></canvas>`).join("")}<canvas width="${W}" height="${H}" id="ovl" style="cursor:crosshair"></canvas></div><div class="sd"><div id="pk"></div><label>Tamaño <input type="range" id="ps" min="1" max="60" value="10" style="width:100%"></label><label>Opacidad <input type="range" id="po" min="10" max="100" value="100" style="width:100%"></label><label><input type="checkbox" id="fl"> Relleno de formas</label>${[0,1,2].map(i=>`<div class="lay"><button data-l="${i}">Capa ${i+1}</button><button data-v="${i}">👁</button></div>`).join("")}<div class="lay"><button id="lv">Niveles</button></div><div class="lay"><button id="cl">Limpiar capa</button><button id="sv" class="pri">💾 Galería</button></div></div></div>`;
+ const PK=ColorPicker($("#pk"));
+ const Lc=i=>$("#L"+(i??lay)),X=()=>Lc().getContext("2d"),ov=$("#ovl"),ox=ov.getContext("2d");
+ const pos=e=>{const b=ov.getBoundingClientRect();return[(e.clientX-b.left)*W/b.width,(e.clientY-b.top)*H/b.height]};
+ const sel=()=>{el.querySelectorAll("[data-t]").forEach(b=>b.classList.toggle("on",b.dataset.t==tool));el.querySelectorAll("[data-l]").forEach(b=>b.classList.toggle("pri",+b.dataset.l==lay))};sel();
+ const comp=()=>{const t=mkc(),x=t.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,W,H);[0,1,2].forEach(i=>{if(vis[i])x.drawImage(Lc(i),0,0)});return t};
+ const setup=x=>{x.globalAlpha=$("#po").value/100;x.lineWidth=$("#ps").value;x.lineCap=x.lineJoin="round";x.strokeStyle=x.fillStyle=PK.hex();x.globalCompositeOperation=tool=="e"?"destination-out":"source-over"};
+ const shape=(x,a,b,c,d)=>{x.beginPath();if(tool=="l"){x.moveTo(a,b);x.lineTo(c,d)}else if(tool=="r")x.rect(a,b,c-a,d-b);else x.ellipse((a+c)/2,(b+d)/2,Math.abs(c-a)/2,Math.abs(d-b)/2,0,0,7);if($("#fl").checked&&tool!="l")x.fill();else x.stroke()};
+ const fill=(px,py)=>{px=Math.round(px);py=Math.round(py);const D=comp().getContext("2d").getImageData(0,0,W,H).data,k=(py*W+px)*4,T=[D[k],D[k+1],D[k+2]],q=mkc(1,1).getContext("2d");q.fillStyle=PK.hex();q.fillRect(0,0,1,1);const C=q.getImageData(0,0,1,1).data,x=X(),L=x.getImageData(0,0,W,H),seen=new Uint8Array(W*H),st=[py*W+px];
+  while(st.length){const i=st.pop();if(seen[i])continue;seen[i]=1;const j=i*4;if(Math.abs(D[j]-T[0])+Math.abs(D[j+1]-T[1])+Math.abs(D[j+2]-T[2])>60)continue;L.data[j]=C[0];L.data[j+1]=C[1];L.data[j+2]=C[2];L.data[j+3]=255;const cx=i%W;if(cx>0)st.push(i-1);if(cx<W-1)st.push(i+1);if(i>=W)st.push(i-W);if(i<W*H-W)st.push(i+W)}
+  x.putImageData(L,0,0)};
+ ov.onpointerdown=e=>{const[a,b]=pos(e);if(tool=="i"){const d=comp().getContext("2d").getImageData(Math.round(a),Math.round(b),1,1).data;PK.setHex("#"+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,"0")).join(""));return}
+  hist.push([lay,X().getImageData(0,0,W,H)]);if(hist.length>12)hist.shift();PK.use();if(tool=="f"){fill(a,b);return}
+  ov.setPointerCapture(e.pointerId);dn=1;sx=lx=a;sy=ly=b;if(tool=="b"||tool=="e"){const x=X();setup(x);x.beginPath();x.moveTo(a,b);x.lineTo(a+.01,b);x.stroke()}};
+ ov.onpointermove=e=>{if(!dn)return;const[a,b]=pos(e);if(tool=="b"||tool=="e"){const x=X();setup(x);x.beginPath();x.moveTo(lx,ly);x.lineTo(a,b);x.stroke();lx=a;ly=b}else{ox.clearRect(0,0,W,H);setup(ox);shape(ox,sx,sy,a,b)}};
+ ov.onpointerup=e=>{if(!dn)return;dn=0;if(tool!="b"&&tool!="e"){const[a,b]=pos(e);ox.clearRect(0,0,W,H);const x=X();setup(x);shape(x,sx,sy,a,b)}};
+ el.onclick=e=>{const t=e.target.closest("button,i");if(!t)return;if(t.dataset.t){tool=t.dataset.t;sel()}else if(t.dataset.l){lay=+t.dataset.l;sel()}else if(t.dataset.v){const i=+t.dataset.v;vis[i]^=1;Lc(i).style.display=vis[i]?"":"none"}else if(t.dataset.c)PK.setHex(t.dataset.c);
+  else if(t.id=="un"){const h=hist.pop();if(h)Lc(h[0]).getContext("2d").putImageData(h[1],0,0)}else if(t.id=="cl"){hist.push([lay,X().getImageData(0,0,W,H)]);X().clearRect(0,0,W,H)}
+  else if(t.id=="lv"){levelsDialog(Lc(),()=>hist.push([lay,X().getImageData(0,0,W,H)]))}else if(t.id=="sv"){WK.push({d:comp().toDataURL("image/jpeg",.7),t:o.title||"Laboratorio 2D"});WK=WK.slice(-12);save();toast("🖼️ Guardado en tu galería");confetti()}};
+ return{comp}}

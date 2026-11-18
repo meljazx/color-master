@@ -1,0 +1,14 @@
+/* base.css · variables, fondo con burbujas, tipografía y canvas base */
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light;--ink:#34495a;--line:#a9cfe3;--acc:#27a4de;--glass:linear-gradient(160deg,#fffffff5,#e3f0f7ee)}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,"Trebuchet MS",Verdana,sans-serif;font-weight:600;color:var(--ink);background:radial-gradient(ellipse at 20% 0,#fff 0,transparent 55%),radial-gradient(ellipse at 90% 100%,#d6ecf7 0,transparent 55%),linear-gradient(#f3f8fb,#dfecf2);min-height:100vh;display:flex;justify-content:center;overflow-x:hidden}
+.bub{position:fixed;bottom:-140px;border-radius:50%;background:radial-gradient(circle at 30% 28%,#fff,#ffffff66 35%,#bfe3f533 70%);border:1px solid #fffa;animation:fl linear infinite;pointer-events:none;z-index:0}
+@keyframes fl{to{transform:translateY(-115vh) translateX(30px)}}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}}
+@keyframes bob{50%{transform:translateY(-8px)}}
+#app{width:100%;max-width:980px;padding:14px;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1}
+.scr{display:none;flex-direction:column;gap:12px;min-height:78vh}.scr.on{display:flex;animation:pop .4s}
+.in{animation:pop .35s}
+small{display:block;opacity:.7;margin:4px 0}
+input[type=range]{accent-color:var(--acc)}
+canvas{max-width:100%;border-radius:14px;display:block;margin:auto;touch-action:none}
